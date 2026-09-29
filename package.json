@@ -1,0 +1,23 @@
+{
+  "name": "deploy-troubleshooter",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "embed": "tsx --env-file=.env.local scripts/embed-kb.ts",
+    "eval": "tsx --env-file=.env.local scripts/eval-retrieval.ts"
+  },
+  "dependencies": {
+    "next": "^15.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.6.0"
+  }
+}

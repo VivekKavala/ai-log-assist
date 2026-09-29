@@ -1,0 +1,942 @@
+[
+  {
+    "id": "k8s-001",
+    "tool": "kubernetes",
+    "title": "CrashLoopBackOff",
+    "patterns": [
+      "CrashLoopBackOff",
+      "Back-off restarting failed container"
+    ],
+    "symptoms": "Pod repeatedly starts and crashes; status shows CrashLoopBackOff.",
+    "causes": [
+      "Application error at startup",
+      "Missing env var or config",
+      "Wrong command/entrypoint",
+      "Failing liveness probe"
+    ],
+    "fix_steps": [
+      "kubectl logs <pod> --previous",
+      "kubectl describe pod <pod> and check Events",
+      "Verify ConfigMap/Secret and env vars",
+      "Check liveness/readiness probe settings"
+    ],
+    "severity": "high"
+  },
+  {
+    "id": "k8s-002",
+    "tool": "kubernetes",
+    "title": "ImagePullBackOff / ErrImagePull",
+    "patterns": [
+      "ImagePullBackOff",
+      "ErrImagePull",
+      "manifest unknown",
+      "pull access denied"
+    ],
+    "symptoms": "Pod stuck in ImagePullBackOff; image cannot be pulled.",
+    "causes": [
+      "Wrong image name or tag",
+      "Private registry without imagePullSecret",
+      "Registry auth expired",
+      "Network issue to registry"
+    ],
+    "fix_steps": [
+      "Verify image name and tag exist in the registry",
+      "Create and reference an imagePullSecret",
+      "kubectl describe pod <pod> for the exact pull error",
+      "Test docker pull from a node"
+    ],
+    "severity": "high"
+  },
+  {
+    "id": "k8s-003",
+    "tool": "kubernetes",
+    "title": "OOMKilled",
+    "patterns": [
+      "OOMKilled",
+      "Exit Code: 137",
+      "out of memory"
+    ],
+    "symptoms": "Container terminated with reason OOMKilled, exit code 137.",
+    "causes": [
+      "Memory limit too low",
+      "Memory leak in application",
+      "Traffic spike"
+    ],
+    "fix_steps": [
+      "Raise resources.limits.memory",
+      "Profile the app for leaks",
+      "Check kubectl top pod for usage",
+      "Add HPA if load-driven"
+    ],
+    "severity": "high"
+  },
+  {
+    "id": "k8s-004",
+    "tool": "kubernetes",
+    "title": "Pod Pending / Unschedulable",
+    "patterns": [
+      "FailedScheduling",
+      "Insufficient cpu",
+      "Insufficient memory",
+      "0/\\d+ nodes are available"
+    ],
+    "symptoms": "Pod stays Pending; scheduler reports no suitable node.",
+    "causes": [
+      "Not enough cluster resources",
+      "Node selector/taint mismatch",
+      "PVC not bound"
+    ],
+    "fix_steps": [
+      "kubectl describe pod <pod> and read the scheduling event",
+      "Reduce resource requests or add nodes",
+      "Check taints, tolerations and nodeSelector",
+      "Check PVC status"
+    ],
+    "severity": "medium"
+  },
+  {
+    "id": "docker-001",
+    "tool": "docker",
+    "title": "Port already in use",
+    "patterns": [
+      "port is already allocated",
+      "address already in use",
+      "EADDRINUSE"
+    ],
+    "symptoms": "Container or app fails to start because the port is taken.",
+    "causes": [
+      "Another container or process is using the port",
+      "Previous instance not stopped"
+    ],
+    "fix_steps": [
+      "Find the process: lsof -i :<port> or docker ps",
+      "Stop the conflicting container/process",
+      "Map to a different host port"
+    ],
+    "severity": "medium"
+  },
+  {
+    "id": "docker-002",
+    "tool": "docker",
+    "title": "Docker build: package or file not found",
+    "patterns": [
+      "COPY failed",
+      "no such file or directory",
+      "returned a non-zero code"
+    ],
+    "symptoms": "docker build fails at a COPY or RUN step.",
+    "causes": [
+      "Wrong build context or path",
+      "File excluded by .dockerignore",
+      "Command failing inside RUN"
+    ],
+    "fix_steps": [
+      "Check paths relative to the build context",
+      "Review .dockerignore",
+      "Run the failing RUN command manually in a container",
+      "Read the exit code and preceding lines"
+    ],
+    "severity": "medium"
+  },
+  {
+    "id": "npm-001",
+    "tool": "npm",
+    "title": "Dependency conflict (ERESOLVE)",
+    "patterns": [
+      "ERESOLVE",
+      "unable to resolve dependency tree",
+      "peer dep"
+    ],
+    "symptoms": "npm install fails with a dependency resolution error.",
+    "causes": [
+      "Conflicting peer dependency versions",
+      "Outdated lockfile"
+    ],
+    "fix_steps": [
+      "Read which packages conflict",
+      "Align versions in package.json",
+      "Regenerate lockfile",
+      "As a last resort use --legacy-peer-deps"
+    ],
+    "severity": "medium"
+  },
+  {
+    "id": "npm-002",
+    "tool": "npm",
+    "title": "Node heap out of memory during build",
+    "patterns": [
+      "JavaScript heap out of memory",
+      "FATAL ERROR: Reached heap limit"
+    ],
+    "symptoms": "Build process crashes with a heap limit error.",
+    "causes": [
+      "Large bundle/build exceeding default Node memory",
+      "CI runner low on memory"
+    ],
+    "fix_steps": [
+      "Set NODE_OPTIONS=--max-old-space-size=4096",
+      "Use a larger CI runner",
+      "Reduce build parallelism"
+    ],
+    "severity": "medium"
+  },
+  {
+    "id": "maven-001",
+    "tool": "maven",
+    "title": "Maven compilation or dependency failure",
+    "patterns": [
+      "COMPILATION ERROR",
+      "Could not resolve dependencies",
+      "BUILD FAILURE",
+      "Failed to execute goal"
+    ],
+    "symptoms": "mvn build fails at compile or dependency resolution.",
+    "causes": [
+      "Missing or wrong dependency version",
+      "Wrong JDK version",
+      "Repository unreachable or credentials missing"
+    ],
+    "fix_steps": [
+      "Read the first ERROR line, not the last",
+      "Check JDK version vs. maven.compiler settings",
+      "Verify repository URL and credentials in settings.xml",
+      "Run mvn -U clean install"
+    ],
+    "severity": "medium"
+  },
+  {
+    "id": "db-001",
+    "tool": "database",
+    "title": "Database connection refused",
+    "patterns": [
+      "ECONNREFUSED",
+      "Connection refused",
+      "could not connect to server",
+      "Communications link failure"
+    ],
+    "symptoms": "App cannot connect to the database on startup.",
+    "causes": [
+      "DB not running or not ready",
+      "Wrong host/port",
+      "Firewall or network policy",
+      "Wrong service name in container network"
+    ],
+    "fix_steps": [
+      "Check the DB service is up and healthy",
+      "Verify host, port and credentials in config",
+      "Test connectivity from the app container",
+      "Add a startup wait or retry"
+    ],
+    "severity": "high"
+  },
+  {
+    "id": "db-002",
+    "tool": "database",
+    "title": "Authentication failed",
+    "patterns": [
+      "password authentication failed",
+      "Access denied for user",
+      "authentication failed"
+    ],
+    "symptoms": "DB rejects the app's credentials.",
+    "causes": [
+      "Wrong or rotated password",
+      "Secret not injected into the environment",
+      "User lacks privileges"
+    ],
+    "fix_steps": [
+      "Verify the secret value in the deployment environment",
+      "Confirm the user and grants on the DB",
+      "Check for a stale secret version"
+    ],
+    "severity": "high"
+  },
+  {
+    "id": "ci-001",
+    "tool": "ci",
+    "title": "Permission denied in pipeline",
+    "patterns": [
+      "Permission denied",
+      "EACCES",
+      "403 Forbidden",
+      "not authorized"
+    ],
+    "symptoms": "Pipeline step fails with a permission error.",
+    "causes": [
+      "Missing execute bit on script",
+      "Token or role lacks permission",
+      "Protected resource or branch"
+    ],
+    "fix_steps": [
+      "chmod +x on the script",
+      "Check the token/role scopes",
+      "Verify the service account permissions"
+    ],
+    "severity": "medium"
+  },
+  {
+    "id": "ci-002",
+    "tool": "ci",
+    "title": "Pipeline timeout",
+    "patterns": [
+      "timed out",
+      "timeout exceeded",
+      "The operation was canceled",
+      "deadline exceeded"
+    ],
+    "symptoms": "Job canceled after exceeding the time limit.",
+    "causes": [
+      "Hanging step or deadlock",
+      "Slow network or dependency download",
+      "Timeout set too low"
+    ],
+    "fix_steps": [
+      "Find the last step that produced output",
+      "Add caching for dependencies",
+      "Increase the timeout if legitimate"
+    ],
+    "severity": "low"
+  },
+  {
+    "id": "k8s-005",
+    "tool": "kubernetes",
+    "title": "Readiness probe failing",
+    "patterns": [
+      "Readiness probe failed",
+      "connect: connection refused.*readiness",
+      "Unhealthy"
+    ],
+    "symptoms": "Pod runs but never becomes Ready; endpoints not added to service.",
+    "causes": [
+      "App not listening on the probe port/path yet",
+      "Wrong probe path or port",
+      "App slow to start, initialDelaySeconds too low"
+    ],
+    "fix_steps": [
+      "kubectl describe pod <pod> and check probe failure reason",
+      "Verify probe path/port match the app",
+      "Increase initialDelaySeconds or add a startupProbe"
+    ],
+    "severity": "medium"
+  },
+  {
+    "id": "k8s-006",
+    "tool": "kubernetes",
+    "title": "PVC stuck Pending",
+    "patterns": [
+      "waiting for a volume to be created",
+      "no persistent volumes available",
+      "FailedBinding"
+    ],
+    "symptoms": "PersistentVolumeClaim stays Pending, pod can't start.",
+    "causes": [
+      "No StorageClass or default StorageClass missing",
+      "No matching PV available",
+      "Provisioner not running"
+    ],
+    "fix_steps": [
+      "kubectl get storageclass",
+      "kubectl describe pvc <name> for events",
+      "Check the provisioner/CSI driver pods are healthy"
+    ],
+    "severity": "medium"
+  },
+  {
+    "id": "k8s-007",
+    "tool": "kubernetes",
+    "title": "ConfigMap/Secret not found",
+    "patterns": [
+      "configmap .* not found",
+      "secret .* not found",
+      "CreateContainerConfigError"
+    ],
+    "symptoms": "Pod fails to start with CreateContainerConfigError.",
+    "causes": [
+      "ConfigMap/Secret not created or wrong name",
+      "Wrong namespace"
+    ],
+    "fix_steps": [
+      "kubectl get configmap,secret -n <namespace>",
+      "Check the name/namespace referenced in the pod spec",
+      "Recreate the missing resource"
+    ],
+    "severity": "high"
+  },
+  {
+    "id": "k8s-008",
+    "tool": "kubernetes",
+    "title": "Service has no endpoints",
+    "patterns": [
+      "no endpoints available",
+      "Endpoints.*<none>"
+    ],
+    "symptoms": "Service exists but traffic doesn't reach any pod.",
+    "causes": [
+      "Label selector mismatch between Service and pods",
+      "Pods not Ready",
+      "Wrong targetPort"
+    ],
+    "fix_steps": [
+      "kubectl get endpoints <svc>",
+      "Compare Service selector to pod labels",
+      "Verify targetPort matches the container port"
+    ],
+    "severity": "high"
+  },
+  {
+    "id": "k8s-009",
+    "tool": "kubernetes",
+    "title": "Helm upgrade failed / stuck release",
+    "patterns": [
+      "UPGRADE FAILED",
+      "another operation.*in progress",
+      "has no deployed releases"
+    ],
+    "symptoms": "helm upgrade fails or release is stuck in pending state.",
+    "causes": [
+      "Previous release interrupted mid-upgrade",
+      "Manifest conflict or invalid values",
+      "CRD changes not supported by upgrade"
+    ],
+    "fix_steps": [
+      "helm status <release>",
+      "helm rollback <release> <revision>",
+      "helm history <release> to find the last good revision"
+    ],
+    "severity": "medium"
+  },
+  {
+    "id": "docker-003",
+    "tool": "docker",
+    "title": "Container exits immediately (exit 0/1)",
+    "patterns": [
+      "Exited \\(0\\)",
+      "Exited \\(1\\)",
+      "exec format error"
+    ],
+    "symptoms": "Container starts then exits right away.",
+    "causes": [
+      "Entrypoint process finishes and container has no long-running process",
+      "Wrong architecture (e.g. arm64 vs amd64) image",
+      "Missing CMD/ENTRYPOINT"
+    ],
+    "fix_steps": [
+      "docker logs <container>",
+      "Check Dockerfile CMD/ENTRYPOINT",
+      "Verify image architecture matches the host"
+    ],
+    "severity": "medium"
+  },
+  {
+    "id": "docker-004",
+    "tool": "docker",
+    "title": "No space left on device",
+    "patterns": [
+      "no space left on device"
+    ],
+    "symptoms": "Build or run fails due to disk space.",
+    "causes": [
+      "Unused images/containers/volumes filling disk",
+      "Large build cache"
+    ],
+    "fix_steps": [
+      "docker system df",
+      "docker system prune -a --volumes",
+      "Remove unused images/volumes"
+    ],
+    "severity": "medium"
+  },
+  {
+    "id": "docker-005",
+    "tool": "docker",
+    "title": "Cannot connect to Docker daemon",
+    "patterns": [
+      "Cannot connect to the Docker daemon",
+      "Is the docker daemon running"
+    ],
+    "symptoms": "docker commands fail immediately.",
+    "causes": [
+      "Docker service not running",
+      "User lacks permission on docker socket",
+      "Wrong DOCKER_HOST"
+    ],
+    "fix_steps": [
+      "sudo systemctl start docker",
+      "Add user to the docker group (or use sudo)",
+      "Check DOCKER_HOST env var"
+    ],
+    "severity": "low"
+  },
+  {
+    "id": "docker-006",
+    "tool": "docker",
+    "title": "Network conflict / bridge issue",
+    "patterns": [
+      "network .* not found",
+      "failed to create endpoint",
+      "pool overlaps with other one on this address space"
+    ],
+    "symptoms": "Container networking fails to create or connect.",
+    "causes": [
+      "Docker network subnet overlaps an existing one",
+      "Stale/orphaned network definitions"
+    ],
+    "fix_steps": [
+      "docker network ls / docker network prune",
+      "Recreate the network with a non-overlapping subnet",
+      "Restart the docker daemon"
+    ],
+    "severity": "low"
+  },
+  {
+    "id": "npm-003",
+    "tool": "npm",
+    "title": "Module not found",
+    "patterns": [
+      "Cannot find module",
+      "MODULE_NOT_FOUND"
+    ],
+    "symptoms": "App crashes on require/import of a missing module.",
+    "causes": [
+      "Dependency not installed or missing from package.json",
+      "Wrong import path or casing",
+      "node_modules not installed in the deploy environment"
+    ],
+    "fix_steps": [
+      "npm install the missing package and commit the lockfile",
+      "Check the import path and file casing",
+      "Ensure the build step runs npm ci before start"
+    ],
+    "severity": "medium"
+  },
+  {
+    "id": "npm-004",
+    "tool": "npm",
+    "title": "Engine/Node version mismatch",
+    "patterns": [
+      "engine .*incompatible",
+      "Unsupported engine",
+      "requires Node"
+    ],
+    "symptoms": "npm install or start fails due to Node version.",
+    "causes": [
+      "package.json engines field stricter than the runtime",
+      "CI/deploy platform using an old Node version"
+    ],
+    "fix_steps": [
+      "Set the correct Node version in the platform config (e.g. .nvmrc, engines field)",
+      "Align the CI/deploy Node version with local dev"
+    ],
+    "severity": "low"
+  },
+  {
+    "id": "npm-005",
+    "tool": "npm",
+    "title": "Env var undefined at runtime",
+    "patterns": [
+      "undefined.*process\\.env",
+      "is not defined",
+      "Missing required environment variable"
+    ],
+    "symptoms": "App crashes because an expected env var is missing.",
+    "causes": [
+      "Env var not set in the deployment platform",
+      ".env file not loaded in production",
+      "Wrong variable name/casing"
+    ],
+    "fix_steps": [
+      "List required env vars in the platform's settings",
+      "Verify the exact variable name matches the code",
+      "Add a startup check that fails fast with a clear message"
+    ],
+    "severity": "medium"
+  },
+  {
+    "id": "maven-002",
+    "tool": "maven",
+    "title": "OutOfMemoryError during build/test",
+    "patterns": [
+      "OutOfMemoryError",
+      "GC overhead limit exceeded"
+    ],
+    "symptoms": "Build or test run crashes with a Java heap error.",
+    "causes": [
+      "Default JVM heap too small for the build",
+      "Memory leak in tests"
+    ],
+    "fix_steps": [
+      "Set MAVEN_OPTS=-Xmx2g (or higher)",
+      "Increase CI runner memory",
+      "Profile failing tests for leaks"
+    ],
+    "severity": "medium"
+  },
+  {
+    "id": "maven-003",
+    "tool": "maven",
+    "title": "Dependency version conflict",
+    "patterns": [
+      "Dependency convergence error",
+      "different version .* was found",
+      "NoSuchMethodError"
+    ],
+    "symptoms": "Build fails or runtime NoSuchMethodError from conflicting library versions.",
+    "causes": [
+      "Two dependencies pull different versions of the same library",
+      "Missing explicit version pin"
+    ],
+    "fix_steps": [
+      "mvn dependency:tree to find the conflict",
+      "Add a <dependencyManagement> entry to pin the version",
+      "Exclude the transitive dependency causing the conflict"
+    ],
+    "severity": "medium"
+  },
+  {
+    "id": "maven-004",
+    "tool": "maven",
+    "title": "Test failures blocking build",
+    "patterns": [
+      "Tests run:.*Failures: [1-9]",
+      "There are test failures"
+    ],
+    "symptoms": "mvn build fails because unit tests fail.",
+    "causes": [
+      "Actual regression",
+      "Flaky/environment-dependent test",
+      "Missing test configuration/resources"
+    ],
+    "fix_steps": [
+      "Read the specific failing test's stack trace",
+      "Reproduce locally with mvn test -Dtest=<TestName>",
+      "Fix the regression or mark the flaky test for review (don't silently skip)"
+    ],
+    "severity": "medium"
+  },
+  {
+    "id": "gha-001",
+    "tool": "github-actions",
+    "title": "Workflow: missing secret/env",
+    "patterns": [
+      "##\\[error\\].*secret",
+      "context access might be invalid",
+      "is not defined in this context"
+    ],
+    "symptoms": "Workflow step fails referencing a secret or variable.",
+    "causes": [
+      "Secret not configured in the repo/org settings",
+      "Wrong secret name",
+      "Secret not available to forked-PR workflows"
+    ],
+    "fix_steps": [
+      "Check Settings > Secrets and variables",
+      "Verify the exact name used in ${{ secrets.NAME }}",
+      "For forks, use pull_request_target carefully or avoid secret-dependent steps"
+    ],
+    "severity": "medium"
+  },
+  {
+    "id": "gha-002",
+    "tool": "github-actions",
+    "title": "Action fails: cache restore/save error",
+    "patterns": [
+      "Cache not found for input keys",
+      "Failed to restore cache",
+      "Failed to save cache"
+    ],
+    "symptoms": "actions/cache step fails or misses.",
+    "causes": [
+      "Cache key changed (lockfile hash) so no match",
+      "Cache size exceeds limits",
+      "Concurrent writes to the same cache key"
+    ],
+    "fix_steps": [
+      "Confirm the cache key includes a hash of the lockfile",
+      "Check the repository's cache usage/limits",
+      "Add restore-keys as a fallback"
+    ],
+    "severity": "low"
+  },
+  {
+    "id": "gha-003",
+    "tool": "github-actions",
+    "title": "Self-hosted/hosted runner out of disk",
+    "patterns": [
+      "No space left on device",
+      "##\\[error\\].*disk"
+    ],
+    "symptoms": "Job fails partway through with a disk space error.",
+    "causes": [
+      "Large build artifacts or Docker layers filling the runner",
+      "Runner not cleaned between jobs (self-hosted)"
+    ],
+    "fix_steps": [
+      "Add a cleanup step (docker system prune, remove old artifacts)",
+      "Use a larger runner",
+      "For self-hosted, add cleanup automation between jobs"
+    ],
+    "severity": "medium"
+  },
+  {
+    "id": "jenkins-001",
+    "tool": "jenkins",
+    "title": "Pipeline: agent offline / no executors",
+    "patterns": [
+      "Waiting for next available executor",
+      "agent .* is offline",
+      "No agent"
+    ],
+    "symptoms": "Build queued indefinitely, no executor picks it up.",
+    "causes": [
+      "No online agent matching the required label",
+      "All executors busy",
+      "Agent disconnected"
+    ],
+    "fix_steps": [
+      "Check Manage Jenkins > Nodes for agent status",
+      "Verify the agent label matches the pipeline's agent{} spec",
+      "Restart/reconnect the offline agent"
+    ],
+    "severity": "medium"
+  },
+  {
+    "id": "jenkins-002",
+    "tool": "jenkins",
+    "title": "Pipeline script security / groovy sandbox error",
+    "patterns": [
+      "Scripts not permitted to use",
+      "RejectedAccessException",
+      "In-process Script Approval"
+    ],
+    "symptoms": "Pipeline fails due to a Groovy sandbox restriction.",
+    "causes": [
+      "Jenkinsfile uses a method not approved in Script Security",
+      "Sandbox disabled inconsistently across jobs"
+    ],
+    "fix_steps": [
+      "Manage Jenkins > In-process Script Approval and approve the signature",
+      "Refactor the Jenkinsfile to avoid the restricted call",
+      "Use a shared library function instead"
+    ],
+    "severity": "low"
+  },
+  {
+    "id": "jenkins-003",
+    "tool": "jenkins",
+    "title": "Credentials not found in pipeline",
+    "patterns": [
+      "Could not find credentials entry",
+      "CredentialsNotFoundException"
+    ],
+    "symptoms": "Pipeline fails referencing a credentials ID.",
+    "causes": [
+      "Wrong credentials ID",
+      "Credentials scoped to a different folder/domain",
+      "Credentials deleted or expired"
+    ],
+    "fix_steps": [
+      "Manage Jenkins > Credentials and confirm the ID and scope",
+      "Match the ID exactly in withCredentials([...])",
+      "Recreate the credential if missing"
+    ],
+    "severity": "medium"
+  },
+  {
+    "id": "db-003",
+    "tool": "database",
+    "title": "Too many connections",
+    "patterns": [
+      "too many connections",
+      "FATAL:.*remaining connection slots",
+      "Pool exhausted"
+    ],
+    "symptoms": "New DB connections rejected under load.",
+    "causes": [
+      "Connection pool not closing connections properly",
+      "max_connections limit too low for concurrent load",
+      "Connection leak in the app"
+    ],
+    "fix_steps": [
+      "Check for unclosed connections/leaked pool clients",
+      "Increase max_connections if the DB tier allows it",
+      "Add/verify a proper connection pool (e.g. pgbouncer)"
+    ],
+    "severity": "high"
+  },
+  {
+    "id": "db-004",
+    "tool": "database",
+    "title": "Migration failed / schema out of sync",
+    "patterns": [
+      "relation .* does not exist",
+      "column .* does not exist",
+      "Migration .* failed"
+    ],
+    "symptoms": "App errors referencing a missing table/column after deploy.",
+    "causes": [
+      "Migration not run before app deploy",
+      "Migration failed partway and wasn't rolled back",
+      "Deploy order: app deployed before migration completed"
+    ],
+    "fix_steps": [
+      "Check migration run logs/status",
+      "Run migrations manually against the target DB",
+      "Fix the deploy pipeline to run migrations before app rollout"
+    ],
+    "severity": "high"
+  },
+  {
+    "id": "db-005",
+    "tool": "database",
+    "title": "Deadlock detected",
+    "patterns": [
+      "deadlock detected",
+      "Lock wait timeout exceeded"
+    ],
+    "symptoms": "Transaction fails due to a deadlock or lock timeout.",
+    "causes": [
+      "Two transactions acquiring locks in different order",
+      "Long-running transaction holding a lock",
+      "High write contention on the same rows"
+    ],
+    "fix_steps": [
+      "Review the queries/order of operations in the failing transaction",
+      "Add retry logic for deadlock errors",
+      "Shorten transaction scope / add appropriate indexes"
+    ],
+    "severity": "medium"
+  },
+  {
+    "id": "net-001",
+    "tool": "generic",
+    "title": "DNS resolution failure",
+    "patterns": [
+      "getaddrinfo ENOTFOUND",
+      "Name or service not known",
+      "Could not resolve host"
+    ],
+    "symptoms": "App can't resolve a hostname.",
+    "causes": [
+      "Wrong hostname/typo in config",
+      "DNS not propagated yet",
+      "Network policy blocking DNS"
+    ],
+    "fix_steps": [
+      "Verify the hostname in config/env vars",
+      "nslookup/dig the hostname from the same environment",
+      "Check network policies/egress rules"
+    ],
+    "severity": "medium"
+  },
+  {
+    "id": "net-002",
+    "tool": "generic",
+    "title": "TLS/SSL certificate error",
+    "patterns": [
+      "certificate has expired",
+      "unable to verify the first certificate",
+      "SSL routines.*certificate verify failed",
+      "x509: certificate"
+    ],
+    "symptoms": "HTTPS calls fail with a certificate error.",
+    "causes": [
+      "Expired certificate",
+      "Self-signed cert not trusted by the client",
+      "Incomplete certificate chain"
+    ],
+    "fix_steps": [
+      "Check certificate expiry (openssl s_client)",
+      "Renew or reissue the certificate",
+      "Ensure the full chain (including intermediates) is served"
+    ],
+    "severity": "high"
+  },
+  {
+    "id": "net-003",
+    "tool": "generic",
+    "title": "Rate limited by upstream API",
+    "patterns": [
+      "429",
+      "Too Many Requests",
+      "rate limit exceeded"
+    ],
+    "symptoms": "Calls to an external API start failing with 429.",
+    "causes": [
+      "Exceeded the API's rate limit",
+      "No backoff/retry logic",
+      "Traffic spike"
+    ],
+    "fix_steps": [
+      "Add exponential backoff and retry on 429",
+      "Check the API's rate limit headers/docs",
+      "Cache repeated calls where possible"
+    ],
+    "severity": "low"
+  },
+  {
+    "id": "net-004",
+    "tool": "generic",
+    "title": "Health check failing at load balancer",
+    "patterns": [
+      "health check failed",
+      "target.*unhealthy",
+      "502 Bad Gateway",
+      "504 Gateway Timeout"
+    ],
+    "symptoms": "Load balancer marks the target unhealthy; 502/504 to users.",
+    "causes": [
+      "App not responding on the health check path in time",
+      "App crashed or still starting",
+      "Security group/firewall blocking the LB"
+    ],
+    "fix_steps": [
+      "Verify the health check path/port/timeout settings",
+      "Check app logs around the time of failures",
+      "Confirm network rules allow the LB to reach the target"
+    ],
+    "severity": "high"
+  },
+  {
+    "id": "net-005",
+    "tool": "generic",
+    "title": "Disk full on host",
+    "patterns": [
+      "No space left on device",
+      "ENOSPC"
+    ],
+    "symptoms": "Writes fail anywhere on the host/app.",
+    "causes": [
+      "Logs or temp files filling the disk",
+      "Old build artifacts not cleaned up"
+    ],
+    "fix_steps": [
+      "df -h to find the full volume",
+      "Clean up logs/temp files, add log rotation",
+      "Increase disk size if usage is legitimately growing"
+    ],
+    "severity": "medium"
+  },
+  {
+    "id": "net-006",
+    "tool": "generic",
+    "title": "Config file missing or malformed",
+    "patterns": [
+      "ENOENT.*config",
+      "YAMLException",
+      "Unexpected token.*JSON",
+      "invalid config"
+    ],
+    "symptoms": "App fails to start while parsing its config file.",
+    "causes": [
+      "Config file not present in the deploy artifact",
+      "Syntax error (YAML/JSON) after a manual edit",
+      "Wrong config path expected by the app"
+    ],
+    "fix_steps": [
+      "Confirm the config file is included in the build/deploy artifact",
+      "Validate YAML/JSON syntax",
+      "Check the path the app expects vs. where the file is placed"
+    ],
+    "severity": "medium"
+  }
+]
